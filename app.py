@@ -11,7 +11,7 @@ if os.path.exists(font_path):
     font_name = font_prop.get_name()
     plt.rc('font', family=font_name)
     plt.rcParams['axes.unicode_minus'] = False
-    st.write(f"✅ 현재 적용된 폰트: `{font_name}`")
+    st.write(f"✅ 현재 적용된 폰트: `{NanumGothic-Bold.ttf}`")
 else:
     st.warning("⚠️ NanumGothic-Bold.ttf 파일을 찾을 수 없습니다. 한글이 깨질 수 있어요.")
 
