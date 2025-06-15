@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 
 # ✅ 한글 폰트 설정
-font_path = os.path.join(os.getcwd(), "NanumGothic.ttf")
+font_path = os.path.join(os.getcwd(), "NanumHumanRegular.ttf")
 if os.path.exists(font_path):
     fm.fontManager.addfont(font_path)
     font_prop = fm.FontProperties(fname=font_path)
