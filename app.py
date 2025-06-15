@@ -14,9 +14,13 @@ else:
     font_prop = None
     st.warning("⚠️ NanumHumanRegular.ttf 파일을 찾을 수 없습니다")
 
-# 📌 앱 제목
-st.title("📊 최저임금의 연도별 변화")
-st.markdown("### &nbsp;")  # ✅ 타이틀과 서브헤더 간 여백 삽입
+# ✅ 제목 (겹침 방지용 HTML 사용)
+st.markdown("""
+    <h1 style='font-size: 2.8em; margin-bottom: 0.5em;'>📊 최저임금의 연도별 변화</h1>
+""", unsafe_allow_html=True)
+
+# ✅ 여백 강제 삽입
+st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
 
 # 📊 데이터 불러오기
 csv_file = "고용노동부_연도별 최저임금_20240805.csv"
@@ -39,7 +43,7 @@ st.subheader("📈 최저임금의 연도별 변화")
 fig, ax = plt.subplots()
 ax.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2)
 
-# ✅ 폰트 적용 시각화 요소
+# ✅ 폰트 조건부 적용
 if font_prop:
     ax.set_title('최저임금의 연도별 변화', fontproperties=font_prop)
     ax.set_xlabel('연도', fontproperties=font_prop)
@@ -52,6 +56,6 @@ else:
 ax.grid(True)
 st.pyplot(fig)
 
-# 📎 하단 정보
+# 📎 출처
 st.markdown("---")
 st.markdown("📌 출처: 고용노동부")
