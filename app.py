@@ -42,3 +42,8 @@ ax.set_title('최저임금의 연도별 변화')
 ax.grid(True)
 
 # Streamlit에 그래프 출력
+st.pyplot(fig)
+
+# 하단 요약
+st.markdown("---")
+st.markdown("📌 출처: 고용노동부 / CSV 기준으로 시각화됨")
