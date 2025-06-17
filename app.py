@@ -10,7 +10,7 @@ import os
 font_path = os.path.join(os.getcwd(), "NanumHumanRegular.ttf")
 if os.path.exists(font_path):
     font_prop = fm.FontProperties(fname=font_path)
-    plt.rc('font', family=font_prop.get_name())  # matplotlib 전역 한글폰트 적용
+    plt.rc('font', family=font_prop.get_name())
     plt.rcParams['axes.unicode_minus'] = False
     st.success("✅ NanumHumanRegular.ttf 폰트 적용 완료")
 else:
@@ -27,12 +27,12 @@ except UnicodeDecodeError:
 df = df[['연도', '시간급']]
 df = df.sort_values('연도')
 
-# ✅ 머신러닝 예측 (선형 회귀)
+# ✅ 머신러닝 예측 (선형 회귀, 2026~2035)
 X = df[['연도']]
 y = df['시간급']
 model = LinearRegression()
 model.fit(X, y)
-future_years = np.array([[2026], [2027], [2028]])
+future_years = np.arange(2026, 2036).reshape(-1, 1)  # 2026~2035년 예측
 future_pred = model.predict(future_years)
 future_df = pd.DataFrame({
     '연도': future_years.flatten(),
@@ -68,9 +68,13 @@ with tab2:
 
     st.markdown("### 최저임금의 미래 예측 그래프")
     fig2, ax2 = plt.subplots()
-    # 과거 + 예측 모두 표시
-    ax2.plot(df['연도'], df['시간급'], marker='o', label='실제 최저임금')
-    ax2.plot(future_df['연도'], future_df['예상 시간급'], marker='x', linestyle='--', color='orange', label='예상 최저임금')
+    # 과거 데이터
+    ax2.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2, label='실제 최저임금')
+    # 예측 데이터: 스타일 눈에 띄게
+    ax2.plot(
+        future_df['연도'], future_df['예상 시간급'],
+        marker='D', linestyle=':', linewidth=3, color='purple', label='예상 최저임금'
+    )
     if font_prop:
         ax2.set_title("미래 최저임금 예측", fontproperties=font_prop)
         ax2.set_xlabel("연도", fontproperties=font_prop)
