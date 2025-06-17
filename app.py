@@ -3,8 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
 import os
 
 # ✅ 한글 폰트 설정
@@ -28,25 +26,28 @@ except UnicodeDecodeError:
 df = df[['연도', '시간급']]
 df = df.sort_values('연도')
 
-# ✅ 3차 다항회귀 + 변동성 추가
-X = df[['연도']]
-y = df['시간급']
-poly = PolynomialFeatures(degree=3)
-X_poly = poly.fit_transform(X)
-model = LinearRegression()
-model.fit(X_poly, y)
+# ✅ 미래 예측: "잠깐 하락 후 쭉 상승" 패턴 직접 생성
+last_real_year = df['연도'].max()
+last_real_wage = df.loc[df['연도'] == last_real_year, '시간급'].values[0]
 
-future_years = np.arange(2026, 2036).reshape(-1, 1)
-future_X_poly = poly.transform(future_years)
-future_pred = model.predict(future_X_poly)
+future_years = np.arange(last_real_year + 1, 2036)
+future_wage = []
 
-# 변동률을 추가(예: -2~+2% 사이에서 랜덤하게 적용)
-np.random.seed(42)  # 실행마다 동일 결과 원할 때 고정, 아니면 지우세요
-variation = np.random.uniform(-0.02, 0.02, size=future_pred.shape)
-future_pred_adjusted = future_pred * (1 + variation)
+for idx, year in enumerate(future_years):
+    if idx < 2:  # 예측 첫 2년(잠깐 하락)
+        # 1년째: -2%, 2년째: -1% (약간 하락)
+        pct = 0.98 if idx == 0 else 0.99
+        wage = last_real_wage * pct
+    elif idx < 4:  # 3~4년째(횡보 또는 소폭 반등)
+        wage = last_real_wage * 1.00 + (idx - 1) * 150  # 약간 상승
+    else:
+        # 그 이후엔 매년 4~6% 상승(현실적 예측)
+        wage = future_wage[-1] * np.random.uniform(1.04, 1.06)
+    future_wage.append(int(wage))
+
 future_df = pd.DataFrame({
-    '연도': future_years.flatten(),
-    '예상 시간급': future_pred_adjusted.astype(int)
+    '연도': future_years,
+    '예상 시간급': future_wage
 })
 
 # ✅ Streamlit 탭
@@ -58,17 +59,17 @@ with tab1:
 
     st.markdown("### 최저임금의 연도별 변화")
     fig, ax = plt.subplots()
-    ax.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2)
+    ax.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2, color='C0', label='실제 최저임금')
     if font_prop:
         ax.set_title("최저임금의 연도별 변화", fontproperties=font_prop)
         ax.set_xlabel("연도", fontproperties=font_prop)
         ax.set_ylabel("시간당 최저임금 (원)", fontproperties=font_prop)
-        ax.legend(['실제 최저임금'], prop=font_prop)
+        ax.legend(prop=font_prop)
     else:
         ax.set_title("최저임금의 연도별 변화")
         ax.set_xlabel("연도")
         ax.set_ylabel("시간당 최저임금 (원)")
-        ax.legend(['실제 최저임금'])
+        ax.legend()
     ax.grid(True)
     st.pyplot(fig)
 
@@ -79,8 +80,8 @@ with tab2:
     st.markdown("### 최저임금의 미래 예측 그래프")
     fig2, ax2 = plt.subplots()
     # 실제
-    ax2.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2, label='실제 최저임금')
-    # 예측: 더 현실적(상승-하락-재상승) + 랜덤성
+    ax2.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2, color='C0', label='실제 최저임금')
+    # 예측(잠깐 하락 후 쭉 상승)
     ax2.plot(
         future_df['연도'], future_df['예상 시간급'],
         marker='D', linestyle=':', linewidth=3, color='purple', label='예상 최저임금'
