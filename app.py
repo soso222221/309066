@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import numpy as np
-from prophet import Prophet
 import os
 
 # ✅ 한글 폰트 설정
@@ -27,25 +26,29 @@ except UnicodeDecodeError:
 df = df[['연도', '시간급']]
 df = df.sort_values('연도')
 
-# ✅ 최근 5년 데이터만 Prophet 학습에 사용
-recent5 = df.tail(5).copy()
-recent5_prophet = recent5.rename(columns={'연도': 'ds', '시간급': 'y'})
-recent5_prophet['ds'] = pd.to_datetime(recent5_prophet['ds'], format='%Y')
+# ✅ 미래 예측: "잠깐 하락 후 쭉 상승" 패턴 직접 생성
+last_real_year = df['연도'].max()
+last_real_wage = df.loc[df['연도'] == last_real_year, '시간급'].values[0]
 
-# ✅ Prophet 모델 생성 및 학습 (최근 5년만)
-model = Prophet(yearly_seasonality=False, daily_seasonality=False, weekly_seasonality=False)
-model.fit(recent5_prophet)
+future_years = np.arange(last_real_year + 1, 2036)
+future_wage = []
 
-# ✅ 미래 예측 (2026~2035)
-last_year = df['연도'].max()
-future = model.make_future_dataframe(periods=2035-last_year, freq='Y')
-forecast = model.predict(future)
+for idx, year in enumerate(future_years):
+    if idx < 2:  # 예측 첫 2년(잠깐 하락)
+        # 1년째: -2%, 2년째: -1% (약간 하락)
+        pct = 0.98 if idx == 0 else 0.99
+        wage = last_real_wage * pct
+    elif idx < 4:  # 3~4년째(횡보 또는 소폭 반등)
+        wage = last_real_wage * 1.00 + (idx - 1) * 150  # 약간 상승
+    else:
+        # 그 이후엔 매년 4~6% 상승(현실적 예측)
+        wage = future_wage[-1] * np.random.uniform(1.04, 1.06)
+    future_wage.append(int(wage))
 
-# 예측 결과에서 2026~2035만 추출
-forecast_future = forecast[forecast['ds'].dt.year > last_year][['ds', 'yhat']]
-forecast_future['연도'] = forecast_future['ds'].dt.year
-forecast_future['예상 시간급'] = forecast_future['yhat'].astype(int)
-future_df = forecast_future[['연도', '예상 시간급']].reset_index(drop=True)
+future_df = pd.DataFrame({
+    '연도': future_years,
+    '예상 시간급': future_wage
+})
 
 # ✅ Streamlit 탭
 tab1, tab2 = st.tabs(["📊 실제 데이터", "🤖 미래 예측"])
@@ -71,25 +74,25 @@ with tab1:
     st.pyplot(fig)
 
 with tab2:
-    st.markdown("### 미래 최저임금 예측 결과 (최근 5년 기반 Prophet)")
+    st.markdown("### 미래 최저임금 예측 결과")
     st.dataframe(future_df)
 
     st.markdown("### 최저임금의 미래 예측 그래프")
     fig2, ax2 = plt.subplots()
     # 실제
     ax2.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2, color='C0', label='실제 최저임금')
-    # 예측(Prophet)
+    # 예측(잠깐 하락 후 쭉 상승)
     ax2.plot(
         future_df['연도'], future_df['예상 시간급'],
-        marker='D', linestyle=':', linewidth=3, color='purple', label='예상 최저임금(Prophet: 최근 5년)"
+        marker='D', linestyle=':', linewidth=3, color='purple', label='예상 최저임금'
     )
     if font_prop:
-        ax2.set_title("미래 최저임금 예측 (최근 5년 기반 Prophet)", fontproperties=font_prop)
+        ax2.set_title("미래 최저임금 예측", fontproperties=font_prop)
         ax2.set_xlabel("연도", fontproperties=font_prop)
         ax2.set_ylabel("시간당 최저임금 (원)", fontproperties=font_prop)
         ax2.legend(prop=font_prop)
     else:
-        ax2.set_title("미래 최저임금 예측 (최근 5년 기반 Prophet)")
+        ax2.set_title("미래 최저임금 예측")
         ax2.set_xlabel("연도")
         ax2.set_ylabel("시간당 최저임금 (원)")
         ax2.legend()
