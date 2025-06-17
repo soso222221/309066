@@ -28,10 +28,10 @@ except UnicodeDecodeError:
 df = df[['연도', '시간급']]
 df = df.sort_values('연도')
 
-# ✅ 다항회귀(2차)로 예측
+# ✅ 3차 다항회귀 + 변동성 추가
 X = df[['연도']]
 y = df['시간급']
-poly = PolynomialFeatures(degree=2)
+poly = PolynomialFeatures(degree=3)
 X_poly = poly.fit_transform(X)
 model = LinearRegression()
 model.fit(X_poly, y)
@@ -39,9 +39,14 @@ model.fit(X_poly, y)
 future_years = np.arange(2026, 2036).reshape(-1, 1)
 future_X_poly = poly.transform(future_years)
 future_pred = model.predict(future_X_poly)
+
+# 변동률을 추가(예: -2~+2% 사이에서 랜덤하게 적용)
+np.random.seed(42)  # 실행마다 동일 결과 원할 때 고정, 아니면 지우세요
+variation = np.random.uniform(-0.02, 0.02, size=future_pred.shape)
+future_pred_adjusted = future_pred * (1 + variation)
 future_df = pd.DataFrame({
     '연도': future_years.flatten(),
-    '예상 시간급': future_pred.astype(int)
+    '예상 시간급': future_pred_adjusted.astype(int)
 })
 
 # ✅ Streamlit 탭
@@ -75,7 +80,7 @@ with tab2:
     fig2, ax2 = plt.subplots()
     # 실제
     ax2.plot(df['연도'], df['시간급'], marker='o', linestyle='-', linewidth=2, label='실제 최저임금')
-    # 예측 (더 곡선으로)
+    # 예측: 더 현실적(상승-하락-재상승) + 랜덤성
     ax2.plot(
         future_df['연도'], future_df['예상 시간급'],
         marker='D', linestyle=':', linewidth=3, color='purple', label='예상 최저임금'
